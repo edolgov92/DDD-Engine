@@ -3,7 +3,8 @@
 > Node.js (TypeScript) Framework for DDD (Domain-Driven Design)
 
 - [Motivation](#motivation)
-- [Domain](#motivation)
+- [Possible Project Structure](#possible-project-structure)
+- [Domain](#domain)
 
 ## Motivation
 
@@ -253,7 +254,8 @@ const user: User = createUserResult.value;
 ...
 const userSession: UserSession = createUserSessionResult.value;
 
-const addUserSessionResult: Either<EntityAlreadyExistsDomainError, void> = user.addUserSession(userSession);
+const addUserSessionResult: Either<EntityAlreadyExistsDomainError, void> =
+  user.addUserSession(userSession);
 if (addUserSessionResult.isLeft()) {
   return left(addUserSessionResult.value);
 }
@@ -264,7 +266,8 @@ if (addUserSessionResult.isLeft()) {
 ```ts
 ...
 const user: User = createUserResult.value;
-const userUpdateResult: Either<EntityValidationDomainError, void> = user.update({ name: 'David' });
+const userUpdateResult: Either<EntityValidationDomainError, void> =
+  user.update({ name: 'David' });
 if (userUpdateResult.isLeft()) {
   return left(userUpdateResult.value);
 }
