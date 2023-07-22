@@ -1,2 +1,1 @@
-# DDD-Engine
-Node.js Framework for DDD (Domain-Driven Design) written on TypeScript
+# Node.js Framework for DDD (Domain-Driven Design) written on TypeScript
