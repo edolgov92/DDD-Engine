@@ -100,7 +100,7 @@ In DDD, these principles and layers work together to create software that accura
 
 #### Defining domain entities
 
-```
+```ts
 // domain/enums/entity-prefixes.ts
 export enum EntityPrefix {
   User = 'usr',
@@ -108,7 +108,7 @@ export enum EntityPrefix {
 }
 ```
 
-```
+```ts
 // domain/entities/user/user.ts
 
 export interface UserProps {
@@ -178,7 +178,7 @@ export class User extends BaseDomainEntity {
 }
 ```
 
-```
+```ts
 // domain/entities/user/user-session.ts
 
 export interface UserSessionProps {
@@ -226,9 +226,9 @@ export class UserSession extends BaseDomainEntity {
 
 #### Create domain entity
 
-```
+```ts
 const createUserResult: Either<EntityValidationDomainError, User> = User.create({
-  name: 'Eugene'
+  name: 'Eugene',
 });
 if (createUserResult.isLeft()) {
   this.logger.debug(createUserResult.value); // value is instance of EntityValidationDomainError
@@ -241,13 +241,13 @@ const user: User = createUserResult.value;
 
 In some cases it can be required in initializing domain entities from repository data
 
-```
+```ts
 const user: User = User.createWithoutValidation({ name: 'Eugene' });
 ```
 
 #### Add nested domain entity
 
-```
+```ts
 ...
 const user: User = createUserResult.value;
 ...
@@ -261,7 +261,7 @@ if (addUserSessionResult.isLeft()) {
 
 #### Update domain entity
 
-```
+```ts
 ...
 const user: User = createUserResult.value;
 const userUpdateResult: Either<EntityValidationDomainError, void> = user.update({ name: 'David' });
