@@ -1,4 +1,4 @@
-import { Semaphore } from './Semaphore';
+import { Semaphore } from './semaphore';
 
 export class Mutex extends Semaphore {
   constructor() {

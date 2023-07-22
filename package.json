@@ -1,6 +1,6 @@
 {
   "name": "ddd-engine",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Node.js Framework for DDD (Domain-Driven Design) written on TypeScript",
   "main": "dist/cjs/index.js",
   "module": "dist/esm/index.js",
@@ -15,10 +15,10 @@
     "clean": "node tools/cleanup",
     "package": "npm run build && npm pack",
     "publish": "npm i && npm run build && npm publish",
-    "test": "jest --no-cache --runInBand",
+    "test": "reset && jest --no-cache --runInBand",
     "test:cov": "jest --coverage --no-cache --runInBand",
     "addscope": "node tools/packagejson name @tomchen/example-typescript-package",
-    "postinstall": "husky install",
+    "_postinstall": "husky install",
     "prepublishOnly": "pinst --disable",
     "postpublish": "pinst --enable"
   },

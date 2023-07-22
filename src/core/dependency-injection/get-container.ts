@@ -1,3 +1,4 @@
+import 'reflect-metadata';
 import { container, DependencyContainer } from 'tsyringe';
 
 export function getContainer(): DependencyContainer {

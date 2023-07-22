@@ -3,13 +3,7 @@ import { Either, left, right } from '../../../core';
 import { EntityValidationDomainError } from '../../errors';
 import { generateEntityId } from '../../utils';
 
-interface Constructable<T> {
-  new (...args: any[]): T;
-  createValidationRules: Rules;
-  updateValidationRules: Rules;
-}
-
-export class BaseDomainEntity {
+export abstract class BaseDomainEntity {
   static createValidationRules: Rules;
   static updateValidationRules: Rules;
 
@@ -19,39 +13,30 @@ export class BaseDomainEntity {
     this.id = id || generateEntityId(prefix);
   }
 
-  static defaultCreate<T extends BaseDomainEntity>(
-    entityClass: Constructable<T>,
-    props: any,
-    customValidationFunc?: (props: any) => Either<EntityValidationDomainError, void>
-  ): Either<EntityValidationDomainError, InstanceType<typeof entityClass>> {
+  static defaultCreate<E extends BaseDomainEntity, T = any>(
+    props: T,
+    factory: () => E,
+    customValidationFunc?: (props: T) => Either<EntityValidationDomainError, void>
+  ): Either<EntityValidationDomainError, E> {
     const validationResult: Either<EntityValidationDomainError, void> = BaseDomainEntity.validate(
-      entityClass,
       props,
-      entityClass.createValidationRules,
+      this.createValidationRules,
       customValidationFunc
     );
     if (validationResult.isLeft()) {
       return left(validationResult.value);
     }
-    return right(new entityClass(props));
+    return right(factory());
   }
 
-  static defaultCreateWithoutValidation<T extends BaseDomainEntity>(
-    entityClass: Constructable<T>,
-    props: any
-  ): InstanceType<typeof entityClass> {
-    return new entityClass(props) as InstanceType<typeof entityClass>;
-  }
-
-  protected defaultUpdate<T extends BaseDomainEntity>(
-    entityClass: Constructable<T>,
-    data: Partial<T>,
-    customValidationFunc?: (data: Partial<T>) => Either<EntityValidationDomainError, void>
+  protected defaultUpdate<E extends typeof BaseDomainEntity, T = any>(
+    entityClass: Partial<E>,
+    data: T,
+    customValidationFunc?: (data: T) => Either<EntityValidationDomainError, void>
   ): Either<EntityValidationDomainError, void> {
     const validationResult: Either<EntityValidationDomainError, void> = BaseDomainEntity.validate(
-      entityClass,
       data,
-      entityClass.updateValidationRules,
+      entityClass.updateValidationRules!,
       customValidationFunc
     );
     if (validationResult.isLeft()) {
@@ -62,14 +47,16 @@ export class BaseDomainEntity {
   }
 
   private static validate<T = any>(
-    entityClass: Constructable<T>,
-    data: any,
+    data: T,
     rules: Rules,
-    customValidationFunc?: (props: any) => Either<EntityValidationDomainError, void>
+    customValidationFunc?: (data: T) => Either<EntityValidationDomainError, void>
   ): Either<EntityValidationDomainError, void> {
-    const validator: Validator.Validator<any> = new Validator(data, rules);
+    if (!rules) {
+      return left(new EntityValidationDomainError(this, data, { data: ['Validation rules not provided'] }));
+    }
+    const validator: Validator.Validator<T> = new Validator(data, rules);
     if (validator.fails()) {
-      return left(new EntityValidationDomainError(entityClass, data, validator.errors.errors));
+      return left(new EntityValidationDomainError(this, data, validator.errors.errors));
     }
     if (customValidationFunc) {
       const validateResult: Either<EntityValidationDomainError, void> = customValidationFunc(data);

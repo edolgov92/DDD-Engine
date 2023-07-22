@@ -1,6 +1,6 @@
-import { DomainError } from './domain-error';
+import { BaseError } from '../../core';
 
-export class EntityNotFoundDomainError extends DomainError {
+export class EntityNotFoundDomainError extends BaseError {
   constructor(entityClass: { name: string }, params?: any) {
     super(
       'EntityNotFoundDomainError',

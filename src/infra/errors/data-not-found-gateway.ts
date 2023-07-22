@@ -1,6 +1,6 @@
-import { InfraError } from './infra-error';
+import { BaseError } from '../../core';
 
-export class DataNotFoundGatewayError extends InfraError {
+export class DataNotFoundGatewayError extends BaseError {
   constructor(gatewayClass: { name: string }, dataName: string, params?: any) {
     super(
       'DataNotFoundGatewayError',

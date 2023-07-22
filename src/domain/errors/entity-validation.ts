@@ -1,7 +1,6 @@
-import { ValidationErrors } from '../../core';
-import { DomainError } from './domain-error';
+import { BaseError, ValidationErrors } from '../../core';
 
-export class EntityValidationDomainError extends DomainError {
+export class EntityValidationDomainError extends BaseError {
   errors?: ValidationErrors;
 
   constructor(entityClass: { name: string }, data: any, errors?: ValidationErrors) {

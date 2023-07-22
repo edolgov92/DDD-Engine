@@ -1,7 +1,6 @@
-import { ValidationErrors } from '../../core';
-import { ApplicationError } from './application-error';
+import { BaseError, ValidationErrors } from '../../core';
 
-export class DtoValidationApplicationError extends ApplicationError {
+export class DtoValidationApplicationError extends BaseError {
   errors?: ValidationErrors;
 
   constructor(entityClass: { name: string }, data: any, errors?: ValidationErrors) {

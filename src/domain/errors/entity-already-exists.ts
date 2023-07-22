@@ -1,6 +1,6 @@
-import { DomainError } from './domain-error';
+import { BaseError } from '../../core';
 
-export class EntityAlreadyExistsDomainError extends DomainError {
+export class EntityAlreadyExistsDomainError extends BaseError {
   constructor(entityClass: { name: string }, data?: any) {
     super(
       'EntityAlreadyExistsDomainError',

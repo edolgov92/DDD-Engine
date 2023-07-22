@@ -1,6 +1,6 @@
-import { InfraError } from './infra-error';
+import { BaseError } from '../../core';
 
-export class EntityNotFoundRepositoryError extends InfraError {
+export class EntityNotFoundRepositoryError extends BaseError {
   constructor(entityClass: { name: string }, params?: any) {
     super(
       'EntityNotFoundRepositoryError',

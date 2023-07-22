@@ -1,6 +1,6 @@
-import { InfraError } from './infra-error';
+import { BaseError } from '../../core';
 
-export class GatewayNotAvailableError extends InfraError {
+export class GatewayNotAvailableError extends BaseError {
   constructor(gatewayClass: { name: string }, error?: any) {
     super(
       'GatewayNotAvailableError',

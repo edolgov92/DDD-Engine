@@ -1,6 +1,6 @@
-import { ApplicationError } from './application-error';
+import { BaseError } from '../../core';
 
-export class EntityAlreadyExistsApplicationError extends ApplicationError {
+export class EntityAlreadyExistsApplicationError extends BaseError {
   constructor(entityClass: { name: string }, data?: any) {
     super(
       'EntityAlreadyExistsApplicationError',
