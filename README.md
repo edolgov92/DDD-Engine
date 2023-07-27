@@ -1,10 +1,13 @@
 # DDD-Engine
 
-> Node.js (TypeScript) Framework for DDD (Domain-Driven Design)
+> Node.js (TypeScript) Framework and guides for DDD (Domain-Driven Design) and Clean Architecture
 
 - [Motivation](#motivation)
 - [Possible Project Structure](#possible-project-structure)
 - [Domain](#domain)
+- [Repositories](#repositories)
+- [Gateways](#gateways)
+- [Use Cases](#use-cases)
 
 ## Motivation
 
@@ -270,5 +273,194 @@ const userUpdateResult: Either<EntityValidationDomainError, void> =
   user.update({ name: 'David' });
 if (userUpdateResult.isLeft()) {
   return left(userUpdateResult.value);
+}
+```
+
+## Repositories
+
+Repositories centralize common data access functionalities. They provide methods to retrieve domain entities and encapsulate the specifics of dealing with data sources, creating a bridge between the domain model and the persistent data storage.
+
+The Domain layer is responsible for defining repository interfaces, ensuring a level of abstraction that keeps it technologically agnostic. The Application layer interacts with these interfaces, oblivious to the specifics of their implementations, as it orchestrates the core business logic.
+
+The task of implementing these interfaces falls on the Infrastructure layer, utilizing a range of technologies as per requirements. It could employ InMemory, Postgres, MongoDB with Redis caching, or even a Time-series database, catering to specific scenarios, like time-sensitive financial data processing.
+
+This design fosters a flexible and resilient architecture, enabling seamless technology interchangeability. It further optimizes the matching of specific use-cases to the most appropriate technologies, enhancing the system's overall adaptability and efficiency.
+
+#### Defining repository interface
+
+```ts
+// domain/repositories/interfaces/user-repository.ts
+
+import { Uset } from '../../entities';
+
+export interface UserRepository {
+  getById(id: string): Promise<Either<EntityNotFoundRepositoryError, User>>;
+  getList(): Promise<User[]>;
+  save(entity: User): Promise<void>;
+  saveList(entities: User[]): Promise<void>;
+  deleteById(id: string): Promise<Either<EntityNotFoundRepositoryError, void>>;
+  ...
+}
+```
+
+#### Implementing repository interface
+
+```ts
+// infra/repositories/in-memory/user-in-memory-repository.ts
+
+import { BaseRepository } from 'ddd-engine';
+import { User, UserRepository } from '../../../../domain';
+
+export class UserInMemoryRepository extends BaseRepository implements UserRepository {
+  private entities: User[] = [];
+
+  async getById(id: string): Promise<Either<EntityNotFoundRepositoryError, User>> {
+    const entity: User | undefined = this.entities.find((item: User) => item.id === id);
+    if (!entity) {
+      return left(new EntityNotFoundRepositoryError(User));
+    }
+    return right(entity);
+  }
+
+  ...
+
+  async save(entity: User): Promise<void> {
+    const existingEntity: User | undefined = this.entities.find(
+      (item: User) => item === entity || item.id === entity.id
+    );
+    if (existingEntity) {
+      if (entity !== existingEntity) {
+        Object.assign(existingEntity, entity);
+      }
+    } else {
+      this.entities.push(entity);
+    }
+  }
+
+  ...
+}
+```
+
+## Gateways
+
+While Repositories deal primarily with internal data access and storage mechanisms, Gateways are designed to handle interactions with external data providers. In the context of a microservices architecture, Gateways not only interact with third-party APIs, but they also enable seamless communication with APIs of other services within the application ecosystem.
+
+Gateways interfaces, similar to Repositories, are primarily defined in the Domain layer. The Application layer communicates with these Gateway interfaces, remaining indifferent to their detailed implementation. The Infrastructure layer shoulders the responsibility of implementing these Gateways, which can differ based on the specifics of the external service. The implementation may correspond to a cloud-based data source, WebSocket, REST API, even Fake / In-Memory implementation, amongst other possibilities.
+
+#### Defining gateway interface
+
+```ts
+// domain/gateways/interfaces/user-wallet-gateway.ts
+
+import { GatewayAvailabilityAndDataErrors } from 'ddd-engine';
+import { Subject } from 'rxjs';
+import { UsetWalletDto } from 'your-shared-lib';
+
+export interface UserWalletGateway {
+  getByUserId(userId: string): Promise<Either<GatewayAvailabilityAndDataErrors, UserWalletDto>>;
+  subscribeToUserBalanceChanges(userId): Promise<Either<GatewayAvailabilityAndDataErrors, Subject<number>>>; // WebSocket communication
+  ...
+}
+```
+
+#### Implementing gateway interface
+
+```ts
+// infra/gateways/external/user-wallet-external-gateway.ts
+
+import { BaseGateway } from 'ddd-engine';
+import { Subject } from 'rxjs';
+import { UsetWalletDto } from 'your-shared-lib';
+import { UserWalletGateway } from '../../../../domain';
+
+export class UserWalletExternalGateway extends BaseGateway implements UserWalletGateway {
+  constructor(private apiUrl: string) {
+    super();
+  }
+
+  async getByUserId(userId: string): Promise<Either<GatewayAvailabilityAndDataErrors, UserWalletDto>> {
+    // Do API call
+  }
+
+  async subscribeToUserBalanceChanges(
+    userId
+  ): Promise<Either<GatewayAvailabilityAndDataErrors, Subject<number>>> {
+    // Subscribe to WebSocket
+  }
+}
+```
+
+## Use Cases
+
+Use Cases embody specific business operations. These are defined in the Application layer and encapsulate the logic needed to orchestrate domain objects (Entities and Value Objects) and infrastructure components (Repositories and Gateways) to fulfill the business requirements. Use Cases ensure the application's business rules and policies are consistently applied, fostering an architecture where the business logic is distinctly separate from the infrastructure and interface concerns.
+
+## Implementing Use Case
+
+```ts
+// application/use-cases/user/get-user-by-id.ts
+
+import { inject, injectable } from 'tsyringe';
+import Validator, { Rules } from 'validatorjs';
+import { UserDto } from 'your-shared-lib';
+import { User, UserRepositoryToken } from '../../../domain';
+import {
+  BaseUseCase,
+  DtoValidationApplicationError,
+  Either,
+  EntityNotFoundRepositoryError,
+  left,
+  Mapper,
+  MappingError,
+  right,
+  UseCase,
+} from '../../../src';
+import { UserDtoMappingScheme } from '../../dto';
+
+import type { UserRepository } from '../../../domain';
+
+export type GetUserByIdInputDto = {
+  id: string;
+};
+
+export type GetUserByIdOutputDto = Either<
+  DtoValidationApplicationError | EntityNotFoundRepositoryError | MappingError,
+  UserDto[]
+>;
+
+const VALIDATION_RULES: Rules = {
+  id: ['string', 'between:3,30'],
+};
+
+@injectable()
+export class GetUserById extends BaseUseCase implements UseCase<GetUserByIdInputDto, GetUserByIdOutputDto> {
+  constructor(@inject(UserRepositoryToken) private readonly userRepository: UserRepository) {
+    super();
+  }
+
+  async execute(input: GetUserByIdInputDto): Promise<GetUserByIdOutputDto> {
+    // Validate input data
+    const validator: Validator.Validator<GetUserByIdInputDto> = new Validator(input, VALIDATION_RULES);
+    if (validator.fails()) {
+      return left(new DtoValidationApplicationError(GetUserById, input, validator.errors.errors));
+    }
+
+    // Call repository method to get data
+    const getUserResult: Either<EntityNotFoundRepositoryError, User[]> = await this.userRepository.getById(
+      input.id
+    );
+    if (getUserResult.isLeft()) {
+      return left(getUserResult.value);
+    }
+    const user: User = getUserResult.value;
+
+    // We don't return domain entity, we are mapping to DTO model
+    const userMappingResult: Either<MappingError, UserDto> = Mapper.map(user, UserDtoMappingScheme);
+    if (userMappingResult.isLeft()) {
+      return left(userMappingResult.value);
+    }
+    const userDto: UserDto = userMappingResult.value;
+
+    return right(userDto);
+  }
 }
 ```
