@@ -8,6 +8,7 @@
 - [Repositories](#repositories)
 - [Gateways](#gateways)
 - [Use Cases](#use-cases)
+- [Controllers](#controllers)
 
 ## Motivation
 
