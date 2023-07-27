@@ -464,3 +464,66 @@ export class GetUserById extends BaseUseCase implements UseCase<GetUserByIdInput
   }
 }
 ```
+
+## Controllers
+
+In the context of Domain-Driven Design (DDD) and Clean Architecture, Controllers take on a multifaceted role as part of Infrastructure level. They act as the first point of contact for a variety of incoming requests, whether they originate from client interactions, inter-service communications in a microservices architecture, or system-generated events such as timers or schedulers.
+
+Controllers parse incoming data, delegate the requests to the appropriate Use Cases, and ensure a well-coordinated response. They decouple the input handling mechanism from the core business logic, acting as orchestrators that guide the interactions between the system's external interfaces and its core business operations. This pivotal role aids in maintaining the system's scalability and adaptability while ensuring the consistent application of the system's business rules and policies.
+
+## Implementing Controller
+
+```ts
+import {
+  badRequest,
+  BaseHttpController,
+  DtoValidationApplicationError,
+  EntityNotFoundRepositoryError,
+  ErrorResponse,
+  MappingError,
+  notFound,
+  ok,
+  Request as HttpRequest,
+  Response as HttpResponse,
+  serverError,
+  UserDto,
+} from 'ddd-engine';
+import { autoInjectable, injectable } from 'tsyringe';
+import { GetUserById, GetUserByIdOutputDto } from '../../../../application';
+
+export namespace GetUserByIdController {
+  export type Request = HttpRequest<void, { userId: string }>;
+  export type Response = HttpResponse<UserDto | ErrorResponse>;
+}
+
+@injectable()
+@autoInjectable()
+export class GetUserByIdController extends BaseHttpController {
+  constructor(private readonly getUserById: GetUserById) {
+    super();
+  }
+
+  // For REST API it is httpRequest, but can be other data type depending on controller purpose
+  async execute(httpRequest: GetUserByIdController.Request): Promise<GetUserByIdController.Response> {
+    const result: GetUserByIdOutputDto = await this.executeUseCase(this.getUserById, {
+      id: httpRequest.params!.userId,
+    });
+
+    if (result.isLeft()) {
+      const error: Error = result.value;
+
+      switch (error.constructor) {
+        case DtoValidationApplicationError:
+          return badRequest(error);
+        case EntityNotFoundRepositoryError:
+          return notFound(error);
+        case MappingError:
+        default:
+          return serverError(error);
+      }
+    }
+
+    return ok(result.value);
+  }
+}
+```
